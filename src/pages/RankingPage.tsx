@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Trophy, Star, Medal } from 'lucide-react';
+import { Medal, Star, Trophy } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
+import { getRestaurants } from '../services/api';
 import { Restaurant } from '../types';
-import { mockApi } from '../services/mockData';
 
 export default function RankingPage() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
@@ -15,8 +15,10 @@ export default function RankingPage() {
   const loadTopRated = async () => {
     setLoading(true);
     try {
-      const data = await mockApi.getTopRated();
-      setRestaurants(data);
+      const data = await getRestaurants();
+      // Ordenar por rating descendente
+      const sorted = data.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      setRestaurants(sorted);
     } catch (error) {
       console.error('Error loading top rated:', error);
     } finally {
@@ -52,7 +54,7 @@ export default function RankingPage() {
           <div className="space-y-4">
             {restaurants.map((restaurant, index) => (
               <div
-                key={restaurant.id}
+                key={restaurant._id}
                 className={`bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 ${
                   index < 3 ? 'border-2 border-orange-300' : ''
                 }`}

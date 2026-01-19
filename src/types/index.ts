@@ -7,7 +7,7 @@ export interface User {
 export interface Restaurant {
   id: string;
   name: string;
-  category: 'Soups' | 'Main' | 'Desserts';
+  category: 'Típica' | 'Callejera' | 'Mariscos' | 'Postres';
   image: string;
   rating: number;
   latestReview: string;

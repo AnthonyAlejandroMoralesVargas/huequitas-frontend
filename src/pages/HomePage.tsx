@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
-import { Search, PlusCircle } from 'lucide-react';
+import { PlusCircle, Search } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import RestaurantCard from '../components/RestaurantCard';
 import ReviewModal from '../components/ReviewModal';
+import { getRestaurants } from '../services/api';
 import { Restaurant } from '../types';
-import { mockApi } from '../services/mockData';
 
 export default function HomePage() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
@@ -14,7 +14,7 @@ export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
-  const categories = ['All', 'Soups', 'Main', 'Desserts'];
+  const categories = ["All", "Típica", "Callejera", "Mariscos", "Postres"];
 
   useEffect(() => {
     loadRestaurants();
@@ -27,7 +27,7 @@ export default function HomePage() {
   const loadRestaurants = async () => {
     setLoading(true);
     try {
-      const data = await mockApi.getRestaurants();
+      const data = await getRestaurants();
       setRestaurants(data);
       setFilteredRestaurants(data);
     } catch (error) {
@@ -37,16 +37,17 @@ export default function HomePage() {
     }
   };
 
-  const filterRestaurants = async () => {
-    try {
-      const data = await mockApi.searchRestaurants(
-        searchQuery,
-        selectedCategory === 'All' ? undefined : selectedCategory
+  const filterRestaurants = () => {
+    let filtered = restaurants;
+    if (searchQuery) {
+      filtered = filtered.filter((r) =>
+        r.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
-      setFilteredRestaurants(data);
-    } catch (error) {
-      console.error('Error filtering restaurants:', error);
     }
+    if (selectedCategory !== 'All') {
+      filtered = filtered.filter((r) => r.cuisine === selectedCategory);
+    }
+    setFilteredRestaurants(filtered);
   };
 
   return (
@@ -112,7 +113,7 @@ export default function HomePage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredRestaurants.map((restaurant) => (
-                  <RestaurantCard key={restaurant.id} restaurant={restaurant} />
+                  <RestaurantCard key={restaurant._id} restaurant={restaurant} />
                 ))}
               </div>
             )}

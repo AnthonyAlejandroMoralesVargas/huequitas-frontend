@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { X, Star, Upload } from 'lucide-react';
-import { mockApi } from '../services/mockData';
+import { Star, Upload, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { createReview, getRestaurants } from '../services/api';
+import { Restaurant } from '../types';
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -10,13 +11,33 @@ interface ReviewModalProps {
 
 export default function ReviewModal({ isOpen, onClose, onSuccess }: ReviewModalProps) {
   const [formData, setFormData] = useState({
-    restaurantName: '',
+    restaurantId: '',
     text: '',
     rating: 5,
     photo: null as File | null,
   });
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingRestaurants, setLoadingRestaurants] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadRestaurants();
+    }
+  }, [isOpen]);
+
+  const loadRestaurants = async () => {
+    setLoadingRestaurants(true);
+    try {
+      const data = await getRestaurants();
+      setRestaurants(data);
+    } catch (error) {
+      console.error('Error loading restaurants:', error);
+    } finally {
+      setLoadingRestaurants(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -34,18 +55,21 @@ export default function ReviewModal({ isOpen, onClose, onSuccess }: ReviewModalP
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.restaurantId) {
+      alert('Please select a restaurant');
+      return;
+    }
     setLoading(true);
 
     try {
-      await mockApi.createReview({
-        restaurantId: '0',
-        restaurantName: formData.restaurantName,
-        text: formData.text,
-        rating: formData.rating,
-      });
+      await createReview(
+        formData.restaurantId,
+        formData.rating,
+        formData.text
+      );
 
       setFormData({
-        restaurantName: '',
+        restaurantId: '',
         text: '',
         rating: 5,
         photo: null,
@@ -76,16 +100,25 @@ export default function ReviewModal({ isOpen, onClose, onSuccess }: ReviewModalP
         <form onSubmit={handleSubmit} className="p-6">
           <div className="mb-6">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Restaurant Name
+              Restaurant
             </label>
-            <input
-              type="text"
-              value={formData.restaurantName}
-              onChange={(e) => setFormData({ ...formData, restaurantName: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
-              required
-              placeholder="Enter restaurant name"
-            />
+            {loadingRestaurants ? (
+              <div className="p-3 bg-gray-100 rounded-lg text-gray-600">Loading restaurants...</div>
+            ) : (
+              <select
+                value={formData.restaurantId}
+                onChange={(e) => setFormData({ ...formData, restaurantId: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition bg-white"
+                required
+              >
+                <option value="">Select a restaurant</option>
+                {restaurants.map((restaurant) => (
+                  <option key={restaurant._id} value={restaurant._id}>
+                    {restaurant.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div className="mb-6">

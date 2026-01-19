@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
 import { Send, Users } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import Navbar from '../components/Navbar';
-import { ChatMessage } from '../types';
-import { mockApi } from '../services/mockData';
 import { useAuth } from '../contexts/AuthContext';
+import { getChatHistory } from '../services/api';
+import { ChatMessage } from '../types';
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -28,7 +28,7 @@ export default function ChatPage() {
   const loadMessages = async () => {
     setLoading(true);
     try {
-      const data = await mockApi.getMessages();
+      const data = await getChatHistory();
       setMessages(data);
     } catch (error) {
       console.error('Error loading messages:', error);
@@ -43,8 +43,9 @@ export default function ChatPage() {
 
     setSending(true);
     try {
-      const message = await mockApi.sendMessage(newMessage);
-      setMessages([...messages, message]);
+      // TODO: Implementar sendMessage en api.ts
+      // const message = await sendMessage(newMessage);
+      // setMessages([...messages, message]);
       setNewMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
