@@ -181,13 +181,12 @@ export default function EditReviewModal({ isOpen, onClose, onSuccess, review }: 
               onChange={(e) => {
                 const newComment = e.target.value;
                 setFormData({ ...formData, comment: newComment });
-                if (newComment.length <= MAX_COMMENT_LENGTH && newComment.length > 0) {
-                  setErrors((prev) => {
-                    const updated = { ...prev };
-                    delete updated.comment;
-                    return updated;
-                  });
-                }
+                // Limpiar error de comentario apenas el usuario escriba
+                setErrors((prev) => {
+                  const updated = { ...prev };
+                  delete updated.comment;
+                  return updated;
+                });
               }}
               maxLength={MAX_COMMENT_LENGTH}
               placeholder="Cuéntanos tu experiencia..."

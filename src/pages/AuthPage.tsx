@@ -148,13 +148,12 @@ export default function AuthPage() {
                   onChange={(e) => {
                     const newName = e.target.value;
                     setFormData({ ...formData, name: newName });
-                    if (newName.length >= 3 && newName.length <= 50) {
-                      setErrors((prev) => {
-                        const updated = { ...prev };
-                        delete updated.name;
-                        return updated;
-                      });
-                    }
+                    // Limpiar error apenas el usuario escriba
+                    setErrors((prev) => {
+                      const updated = { ...prev };
+                      delete updated.name;
+                      return updated;
+                    });
                   }}
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:outline-none transition ${
                     errors.name ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-orange-500 focus:border-transparent'
@@ -178,13 +177,12 @@ export default function AuthPage() {
                 onChange={(e) => {
                   const newEmail = e.target.value;
                   setFormData({ ...formData, email: newEmail });
-                  if (newEmail && newEmail.includes('@') && newEmail.includes('.')) {
-                    setErrors((prev) => {
-                      const updated = { ...prev };
-                      delete updated.email;
-                      return updated;
-                    });
-                  }
+                  // Limpiar error apenas el usuario escriba
+                  setErrors((prev) => {
+                    const updated = { ...prev };
+                    delete updated.email;
+                    return updated;
+                  });
                 }}
                 className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:outline-none transition ${
                   errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-orange-500 focus:border-transparent'
@@ -207,24 +205,13 @@ export default function AuthPage() {
                   onChange={(e) => {
                     const newPassword = e.target.value;
                     setFormData({ ...formData, password: newPassword });
-                    if (activeTab === 'signin') {
-                      if (newPassword.length >= 6) {
-                        setErrors((prev) => {
-                          const updated = { ...prev };
-                          delete updated.password;
-                          return updated;
-                        });
-                      }
-                    } else {
-                      const strength = validatePasswordStrength(newPassword);
-                      if (strength.score >= 2) {
-                        setErrors((prev) => {
-                          const updated = { ...prev };
-                          delete updated.password;
-                          return updated;
-                        });
-                      }
-                    }
+                    // Limpiar errores apenas el usuario escriba
+                    setErrors((prev) => {
+                      const updated = { ...prev };
+                      delete updated.password;
+                      delete updated.confirmPassword;
+                      return updated;
+                    });
                   }}
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:outline-none transition ${
                     errors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-orange-500 focus:border-transparent'
@@ -279,13 +266,12 @@ export default function AuthPage() {
                     onChange={(e) => {
                       const newConfirm = e.target.value;
                       setFormData({ ...formData, confirmPassword: newConfirm });
-                      if (newConfirm === formData.password && newConfirm.length > 0) {
-                        setErrors((prev) => {
-                          const updated = { ...prev };
-                          delete updated.confirmPassword;
-                          return updated;
-                        });
-                      }
+                      // Limpiar error apenas el usuario escriba
+                      setErrors((prev) => {
+                        const updated = { ...prev };
+                        delete updated.confirmPassword;
+                        return updated;
+                      });
                     }}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:outline-none transition ${
                       errors.confirmPassword ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-orange-500 focus:border-transparent'
