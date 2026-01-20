@@ -5,24 +5,25 @@ export interface User {
 }
 
 export interface Restaurant {
-  id: string;
+  _id: string;
   name: string;
-  category: 'Típica' | 'Callejera' | 'Mariscos' | 'Postres';
-  image: string;
-  rating: number;
-  latestReview: string;
-  reviewCount: number;
+  description?: string;
+  address?: string;
+  cuisine: string;
+  image?: string;
+  rating?: number;
+  totalRatings?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Review {
-  id: string;
+  _id: string;
   restaurantId: string;
-  restaurantName: string;
-  text: string;
-  rating: number;
-  photo?: string;
   userId: string;
   userName: string;
+  rating: number;
+  comment?: string;
   createdAt: string;
 }
 

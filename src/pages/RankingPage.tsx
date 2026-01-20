@@ -86,7 +86,7 @@ export default function RankingPage() {
                         <div className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-yellow-500 px-4 py-2 rounded-full shadow-lg">
                           <Star className="w-6 h-6 fill-white text-white" />
                           <span className="text-2xl font-bold text-white">
-                            {restaurant.rating.toFixed(1)}
+                            {(restaurant.rating || 0).toFixed(1)}
                           </span>
                         </div>
                         <span className="text-sm text-gray-500">
@@ -95,7 +95,7 @@ export default function RankingPage() {
                       </div>
                     </div>
                     <p className="text-gray-600 mt-3 line-clamp-2">
-                      {restaurant.latestReview}
+                      {restaurant.description || 'Sin descripción'}
                     </p>
                   </div>
                 </div>

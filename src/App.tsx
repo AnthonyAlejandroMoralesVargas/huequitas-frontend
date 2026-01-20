@@ -1,9 +1,10 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AuthPage from './pages/AuthPage';
-import HomePage from './pages/HomePage';
 import ChatPage from './pages/ChatPage';
+import HomePage from './pages/HomePage';
 import RankingPage from './pages/RankingPage';
+import RestaurantDetailPage from './pages/RestaurantDetailPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, isLoading } = useAuth();
@@ -51,6 +52,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <HomePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/restaurant/:id"
+            element={
+              <ProtectedRoute>
+                <RestaurantDetailPage />
               </ProtectedRoute>
             }
           />

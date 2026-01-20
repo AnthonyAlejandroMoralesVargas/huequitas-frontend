@@ -7,11 +7,12 @@ interface ReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  restaurantId?: string;
 }
 
-export default function ReviewModal({ isOpen, onClose, onSuccess }: ReviewModalProps) {
+export default function ReviewModal({ isOpen, onClose, onSuccess, restaurantId }: ReviewModalProps) {
   const [formData, setFormData] = useState({
-    restaurantId: '',
+    restaurantId: restaurantId || '',
     text: '',
     rating: 5,
     photo: null as File | null,
@@ -22,10 +23,16 @@ export default function ReviewModal({ isOpen, onClose, onSuccess }: ReviewModalP
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && restaurantId) {
+      setFormData((prev) => ({ ...prev, restaurantId }));
+    }
+  }, [restaurantId, isOpen]);
+
+  useEffect(() => {
+    if (isOpen && !restaurantId) {
       loadRestaurants();
     }
-  }, [isOpen]);
+  }, [isOpen, restaurantId]);
 
   const loadRestaurants = async () => {
     setLoadingRestaurants(true);
@@ -98,32 +105,34 @@ export default function ReviewModal({ isOpen, onClose, onSuccess }: ReviewModalP
         </div>
 
         <form onSubmit={handleSubmit} className="p-6">
-          <div className="mb-6">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Restaurant
-            </label>
-            {loadingRestaurants ? (
-              <div className="p-3 bg-gray-100 rounded-lg text-gray-600">Loading restaurants...</div>
-            ) : (
-              <select
-                value={formData.restaurantId}
-                onChange={(e) => setFormData({ ...formData, restaurantId: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition bg-white"
-                required
-              >
-                <option value="">Select a restaurant</option>
-                {restaurants.map((restaurant) => (
-                  <option key={restaurant._id} value={restaurant._id}>
-                    {restaurant.name}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
+          {!restaurantId && (
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Restaurante
+              </label>
+              {loadingRestaurants ? (
+                <div className="p-3 bg-gray-100 rounded-lg text-gray-600">Cargando restaurantes...</div>
+              ) : (
+                <select
+                  value={formData.restaurantId}
+                  onChange={(e) => setFormData({ ...formData, restaurantId: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition bg-white"
+                  required
+                >
+                  <option value="">Selecciona un restaurante</option>
+                  {restaurants.map((restaurant) => (
+                    <option key={restaurant._id} value={restaurant._id}>
+                      {restaurant.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )}
 
           <div className="mb-6">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Your Rating
+              Tu calificación
             </label>
             <div className="flex items-center gap-2">
               {[1, 2, 3, 4, 5].map((star) => (
