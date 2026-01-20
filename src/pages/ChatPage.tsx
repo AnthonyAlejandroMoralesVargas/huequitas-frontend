@@ -1,8 +1,8 @@
 import { Send, Users } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { io, Socket } from 'socket.io-client';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../contexts/AuthContext';
-import { getChatHistory } from '../services/api';
 import { ChatMessage } from '../types';
 
 export default function ChatPage() {
@@ -10,12 +10,74 @@ export default function ChatPage() {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const socketRef = useRef<Socket | null>(null);
   const { user } = useAuth();
 
   useEffect(() => {
-    loadMessages();
-  }, []);
+    if (!user) return;
+
+    // Conectar a Socket.IO
+    const socket = io('http://localhost:3003', {
+      withCredentials: true,
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5
+    });
+
+    socketRef.current = socket;
+
+    // Escuchar eventos de conexión
+    socket.on('connect', () => {
+      console.log('✅ Conectado al chat service');
+      setLoading(false);
+      
+      // Unirse a la sala "general"
+      socket.emit('join-room', 'general');
+    });
+
+    // Recibir historial de mensajes
+    socket.on('message-history', (history: any[]) => {
+      console.log('📜 Historial de mensajes:', history);
+      const formattedMessages: ChatMessage[] = history.map((msg, index) => ({
+        id: msg._id || `${msg.userId}-${index}`,
+        userId: msg.userId,
+        userName: msg.userName,
+        message: msg.message,
+        timestamp: msg.createdAt || new Date().toISOString()
+      }));
+      setMessages(formattedMessages);
+    });
+
+    // Recibir nuevo mensaje
+    socket.on('receive-message', (messageData: any) => {
+      console.log('📨 Nuevo mensaje:', messageData);
+      const newMsg: ChatMessage = {
+        id: messageData._id || `${messageData.userId}-${Date.now()}`,
+        userId: messageData.userId,
+        userName: messageData.userName,
+        message: messageData.message,
+        timestamp: messageData.createdAt || new Date().toISOString()
+      };
+      setMessages((prev) => [...prev, newMsg]);
+    });
+
+    // Manejar errores
+    socket.on('error', (error: any) => {
+      console.error('❌ Error en el chat:', error);
+    });
+
+    // Desconexión
+    socket.on('disconnect', () => {
+      console.log('⚠️ Desconectado del chat service');
+      setLoading(true);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [user]);
 
   useEffect(() => {
     scrollToBottom();
@@ -25,27 +87,20 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const loadMessages = async () => {
-    setLoading(true);
-    try {
-      const data = await getChatHistory();
-      setMessages(data);
-    } catch (error) {
-      console.error('Error loading messages:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || sending) return;
+    if (!newMessage.trim() || sending || !user) return;
 
     setSending(true);
     try {
-      // TODO: Implementar sendMessage en api.ts
-      // const message = await sendMessage(newMessage);
-      // setMessages([...messages, message]);
+      // Enviar mensaje vía Socket.IO
+      socketRef.current?.emit('send-message', {
+        userId: user.id,
+        userName: user.name,
+        message: newMessage,
+        room: 'general'
+      });
+
       setNewMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
@@ -55,8 +110,14 @@ export default function ChatPage() {
   };
 
   const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    try {
+      return new Date(timestamp).toLocaleTimeString('es-ES', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return '';
+    }
   };
 
   return (
