@@ -26,6 +26,8 @@ export default function RestaurantDetailPage() {
   const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [reviewToDelete, setReviewToDelete] = useState<string | null>(null);
+  const [selectedRating, setSelectedRating] = useState<number | null>(null);
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'highest' | 'lowest'>('newest');
 
   useEffect(() => {
     loadRestaurantData();
@@ -110,6 +112,27 @@ export default function RestaurantDetailPage() {
   const handleReviewSuccess = () => {
     loadRestaurantData();
   };
+
+  // Filtrar reseñas por rating
+  const filteredReviews = selectedRating
+    ? reviews.filter(review => review.rating === selectedRating)
+    : reviews;
+
+  // Ordenar reseñas
+  const sortedReviews = [...filteredReviews].sort((a, b) => {
+    switch (sortOrder) {
+      case 'newest':
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      case 'oldest':
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      case 'highest':
+        return b.rating - a.rating;
+      case 'lowest':
+        return a.rating - b.rating;
+      default:
+        return 0;
+    }
+  });
 
   if (loading) {
     return (
@@ -232,26 +255,73 @@ export default function RestaurantDetailPage() {
 
         {/* Reviews Section */}
         <div className="bg-white rounded-2xl shadow-2xl p-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">
-            Reseñas ({reviews.length})
-          </h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-800">
+              Reseñas ({filteredReviews.length})
+            </h2>
 
-          {reviews.length === 0 ? (
+            {/* Rating Filter & Sort - ComboBoxes */}
+            {reviews.length > 0 && (
+              <div className="flex items-center gap-4">
+                {/* Filter ComboBox */}
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-semibold text-gray-600">Filtrar:</label>
+                  <select
+                    value={selectedRating ?? ''}
+                    onChange={(e) => setSelectedRating(e.target.value ? parseInt(e.target.value) : null)}
+                    className="px-4 py-2 border-2 border-gray-300 rounded-lg font-semibold text-gray-700 hover:border-orange-400 focus:border-orange-500 focus:outline-none transition-colors bg-white cursor-pointer"
+                  >
+                    <option value="">Todas las reseñas</option>
+                    {[5, 4, 3, 2, 1].map((rating) => {
+                      const count = reviews.filter(r => r.rating === rating).length;
+                      return count > 0 ? (
+                        <option key={rating} value={rating}>
+                          {'⭐'.repeat(rating)}
+                        </option>
+                      ) : null;
+                    })}
+                  </select>
+                </div>
+
+                {/* Sort ComboBox */}
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-semibold text-gray-600">Ordenar:</label>
+                  <select
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value as 'newest' | 'oldest' | 'highest' | 'lowest')}
+                    className="px-4 py-2 border-2 border-gray-300 rounded-lg font-semibold text-gray-700 hover:border-orange-400 focus:border-orange-500 focus:outline-none transition-colors bg-white cursor-pointer"
+                  >
+                    <option value="newest">Más recientes</option>
+                    <option value="oldest">Más antiguas</option>
+                    <option value="highest">Mejor calificadas</option>
+                    <option value="lowest">Peor calificadas</option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {filteredReviews.length === 0 ? (
             <div className="text-center py-12">
               <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-600 mb-6">
-                Aún no hay reseñas. ¡Sé el primero en compartir tu experiencia!
+                {selectedRating
+                  ? `No hay reseñas con ${selectedRating} estrella${selectedRating !== 1 ? 's' : ''}.`
+                  : 'Aún no hay reseñas. ¡Sé el primero en compartir tu experiencia!'}
               </p>
               <button
-                onClick={() => setIsReviewModalOpen(true)}
+                onClick={() => {
+                  setSelectedRating(null);
+                  setIsReviewModalOpen(true);
+                }}
                 className="px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-lg font-semibold hover:from-orange-600 hover:to-yellow-600 transition shadow-lg"
               >
-                Escribir la primera reseña
+                {selectedRating ? 'Ver todas las reseñas' : 'Escribir la primera reseña'}
               </button>
             </div>
           ) : (
             <div className="space-y-6">
-              {reviews.map((review) => (
+              {sortedReviews.map((review) => (
                 <div
                   key={review._id}
                   className="border border-gray-200 rounded-xl p-6 hover:border-orange-300 transition"
@@ -308,7 +378,7 @@ export default function RestaurantDetailPage() {
                   {review.image && (
                     <div className="flex justify-center">
                       <div 
-                        onClick={() => setSelectedImage(review.image)}
+                        onClick={() => setSelectedImage(review.image || null)}
                         className="group relative w-full max-w-sm rounded-xl overflow-hidden cursor-pointer shadow-md hover:shadow-xl transition-all duration-300"
                       >
                         {/* Image Container */}
