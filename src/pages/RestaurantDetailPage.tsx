@@ -227,6 +227,15 @@ export default function RestaurantDetailPage() {
 
                   {/* Review Comment */}
                   <p className="text-gray-700 leading-relaxed">{review.comment || 'Sin comentarios'}</p>
+
+                  {/* Review Image */}
+                  {review.image && (
+                    <img
+                      src={review.image}
+                      alt="Review"
+                      className="mt-4 w-full h-40 object-cover rounded-lg"
+                    />
+                  )}
                 </div>
               ))}
             </div>

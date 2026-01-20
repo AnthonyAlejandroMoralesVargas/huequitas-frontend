@@ -13,14 +13,13 @@ interface ReviewModalProps {
 export default function ReviewModal({ isOpen, onClose, onSuccess, restaurantId }: ReviewModalProps) {
   const [formData, setFormData] = useState({
     restaurantId: restaurantId || '',
-    text: '',
+    comment: '',
     rating: 5,
-    photo: null as File | null,
+    image: '' as string,
   });
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingRestaurants, setLoadingRestaurants] = useState(false);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && restaurantId) {
@@ -51,10 +50,9 @@ export default function ReviewModal({ isOpen, onClose, onSuccess, restaurantId }
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setFormData({ ...formData, photo: file });
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
+        setFormData({ ...formData, image: reader.result as string });
       };
       reader.readAsDataURL(file);
     }
@@ -72,16 +70,16 @@ export default function ReviewModal({ isOpen, onClose, onSuccess, restaurantId }
       await createReview(
         formData.restaurantId,
         formData.rating,
-        formData.text
+        formData.comment,
+        formData.image
       );
 
       setFormData({
-        restaurantId: '',
-        text: '',
+        restaurantId: restaurantId || '',
+        comment: '',
         rating: 5,
-        photo: null,
+        image: '',
       });
-      setPhotoPreview(null);
       onSuccess();
       onClose();
     } catch (error) {
@@ -162,11 +160,10 @@ export default function ReviewModal({ isOpen, onClose, onSuccess, restaurantId }
               Your Review
             </label>
             <textarea
-              value={formData.text}
-              onChange={(e) => setFormData({ ...formData, text: e.target.value })}
+              value={formData.comment}
+              onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition resize-none"
               rows={5}
-              required
               placeholder="Share your experience..."
             />
           </div>
@@ -176,18 +173,17 @@ export default function ReviewModal({ isOpen, onClose, onSuccess, restaurantId }
               Add Photo (Optional)
             </label>
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-orange-500 transition-colors">
-              {photoPreview ? (
+              {formData.image ? (
                 <div className="relative">
                   <img
-                    src={photoPreview}
+                    src={formData.image}
                     alt="Preview"
                     className="max-h-48 mx-auto rounded-lg"
                   />
                   <button
                     type="button"
                     onClick={() => {
-                      setFormData({ ...formData, photo: null });
-                      setPhotoPreview(null);
+                      setFormData({ ...formData, image: '' });
                     }}
                     className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
                   >

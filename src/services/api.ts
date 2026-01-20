@@ -52,6 +52,7 @@ export interface Review {
   userName: string;
   rating: number;
   comment: string;
+  image?: string;
   createdAt: string;
 }
 
@@ -123,9 +124,9 @@ export const deleteRestaurant = async (id: string) => {
 
 // --- SERVICIOS DE RESEÑAS Y LIKES ---
 
-export const createReview = async (restaurantId: string, rating: number, comment: string) => {
+export const createReview = async (restaurantId: string, rating: number, comment: string, image?: string) => {
   // Requiere Auth
-  const response = await api.post('/api/reviews', { restaurantId, rating, comment });
+  const response = await api.post('/api/reviews', { restaurantId, rating, comment, image });
   return response.data;
 };
 
