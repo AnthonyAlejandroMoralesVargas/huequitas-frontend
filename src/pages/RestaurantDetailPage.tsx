@@ -1,4 +1,4 @@
-import { ArrowLeft, Heart, MessageCircle, Star } from 'lucide-react';
+import { ArrowLeft, Heart, MessageCircle, Star, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
@@ -16,6 +16,7 @@ export default function RestaurantDetailPage() {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     loadRestaurantData();
@@ -226,15 +227,40 @@ export default function RestaurantDetailPage() {
                   </div>
 
                   {/* Review Comment */}
-                  <p className="text-gray-700 leading-relaxed">{review.comment || 'Sin comentarios'}</p>
+                  <p className="text-gray-700 leading-relaxed mb-4">{review.comment || 'Sin comentarios'}</p>
 
-                  {/* Review Image */}
+                  {/* Review Image - Enhanced Design */}
                   {review.image && (
-                    <img
-                      src={review.image}
-                      alt="Review"
-                      className="mt-4 w-full h-40 object-cover rounded-lg"
-                    />
+                    <div className="flex justify-center">
+                      <div 
+                        onClick={() => setSelectedImage(review.image)}
+                        className="group relative w-full max-w-sm rounded-xl overflow-hidden cursor-pointer shadow-md hover:shadow-xl transition-all duration-300"
+                      >
+                        {/* Image Container */}
+                        <div className="relative bg-gradient-to-br from-gray-100 to-gray-200 aspect-video flex items-center justify-center overflow-hidden">
+                          <img
+                            src={review.image}
+                            alt="Review"
+                            className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                        
+                        {/* Overlay on Hover */}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2">
+                              <MessageCircle className="w-4 h-4 text-orange-500" />
+                              <span className="text-sm font-semibold text-gray-800">Ver imagen</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Corner Badge */}
+                        <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg shadow-md">
+                          <p className="text-xs font-semibold text-gray-700">Foto de reseña</p>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               ))}
@@ -250,6 +276,29 @@ export default function RestaurantDetailPage() {
         onSuccess={handleReviewSuccess}
         restaurantId={id}
       />
+
+      {/* Image Lightbox Modal */}
+      {selectedImage && (
+        <div
+          onClick={() => setSelectedImage(null)}
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+        >
+          <div className="relative flex items-center justify-center max-w-4xl max-h-[90vh]">
+            <img
+              src={selectedImage}
+              alt="Enlarged review"
+              className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute top-4 right-4 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white p-2 rounded-full transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
