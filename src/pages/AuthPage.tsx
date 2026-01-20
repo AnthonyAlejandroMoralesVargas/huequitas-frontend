@@ -1,7 +1,15 @@
+import { Eye, EyeOff, UtensilsCrossed } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { UtensilsCrossed } from 'lucide-react';
+import {
+  getPasswordStrengthColor,
+  getPasswordStrengthMessage,
+  validateEmail,
+  validateName,
+  validatePasswordsMatch,
+  validatePasswordStrength,
+} from '../utils/validators';
 
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
@@ -11,25 +19,62 @@ export default function AuthPage() {
     password: '',
     confirmPassword: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login, signUp } = useAuth();
   const navigate = useNavigate();
 
+  // Obtener fortaleza de contraseña
+  const passwordStrength = validatePasswordStrength(formData.password);
+
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    // Validar email
+    const emailError = validateEmail(formData.email);
+    if (emailError) newErrors[emailError.field] = emailError.message;
+
+    // Validar nombre (solo en signup)
+    if (activeTab === 'signup') {
+      const nameError = validateName(formData.name, 'nombre');
+      if (nameError) newErrors[nameError.field] = nameError.message;
+
+      // Validar fortaleza de contraseña
+      if (passwordStrength.score < 2) {
+        newErrors.password = 'La contraseña no es suficientemente fuerte';
+      }
+
+      // Validar que coincidan
+      const matchError = validatePasswordsMatch(formData.password, formData.confirmPassword);
+      if (matchError) newErrors[matchError.field] = matchError.message;
+    } else {
+      // En login, solo validar que no esté vacía
+      if (!formData.password) {
+        newErrors.password = 'La contraseña es requerida';
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
       if (activeTab === 'signin') {
         await login(formData.email, formData.password);
       } else {
-        if (formData.password !== formData.confirmPassword) {
-          setError('Passwords do not match');
-          setLoading(false);
-          return;
-        }
         await signUp(formData.name, formData.email, formData.password);
       }
       navigate('/');
@@ -54,102 +99,217 @@ export default function AuthPage() {
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
           <div className="flex border-b border-gray-200">
             <button
-              onClick={() => setActiveTab('signin')}
+              onClick={() => {
+                setActiveTab('signin');
+                setErrors({});
+                setError('');
+              }}
               className={`flex-1 py-4 text-center font-semibold transition-all ${
                 activeTab === 'signin'
                   ? 'text-orange-600 border-b-2 border-orange-600 bg-orange-50'
                   : 'text-gray-500 hover:bg-gray-50'
               }`}
             >
-              Sign In
+              Iniciar Sesión
             </button>
             <button
-              onClick={() => setActiveTab('signup')}
+              onClick={() => {
+                setActiveTab('signup');
+                setErrors({});
+                setError('');
+              }}
               className={`flex-1 py-4 text-center font-semibold transition-all ${
                 activeTab === 'signup'
                   ? 'text-orange-600 border-b-2 border-orange-600 bg-orange-50'
                   : 'text-gray-500 hover:bg-gray-50'
               }`}
             >
-              Sign Up
+              Crear Cuenta
             </button>
           </div>
 
           <form onSubmit={handleSubmit} className="p-8">
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
-                {error}
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm font-semibold">
+                ❌ {error}
               </div>
             )}
 
+            {/* Nombre - Solo en signup */}
             {activeTab === 'signup' && (
               <div className="mb-4">
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                  Name
+                  Nombre Completo <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="name"
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
-                  required
+                  onChange={(e) => {
+                    const newName = e.target.value;
+                    setFormData({ ...formData, name: newName });
+                    if (newName.length >= 3 && newName.length <= 50) {
+                      setErrors((prev) => {
+                        const updated = { ...prev };
+                        delete updated.name;
+                        return updated;
+                      });
+                    }
+                  }}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:outline-none transition ${
+                    errors.name ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-orange-500 focus:border-transparent'
+                  }`}
+                  placeholder="Juan Pérez"
                 />
+                {errors.name && <p className="text-red-500 text-xs mt-1">⚠️ {errors.name}</p>}
+                <p className="text-gray-500 text-xs mt-1">3-50 caracteres, solo letras</p>
               </div>
             )}
 
+            {/* Email */}
             <div className="mb-4">
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email
+                Correo Electrónico <span className="text-red-500">*</span>
               </label>
               <input
                 id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
-                required
+                onChange={(e) => {
+                  const newEmail = e.target.value;
+                  setFormData({ ...formData, email: newEmail });
+                  if (newEmail && newEmail.includes('@') && newEmail.includes('.')) {
+                    setErrors((prev) => {
+                      const updated = { ...prev };
+                      delete updated.email;
+                      return updated;
+                    });
+                  }
+                }}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:outline-none transition ${
+                  errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-orange-500 focus:border-transparent'
+                }`}
+                placeholder="ejemplo@email.com"
               />
+              {errors.email && <p className="text-red-500 text-xs mt-1">⚠️ {errors.email}</p>}
             </div>
 
+            {/* Contraseña */}
             <div className="mb-4">
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
+                Contraseña {activeTab === 'signup' && <span className="text-red-500">*</span>}
               </label>
-              <input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
-                required
-                minLength={6}
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={(e) => {
+                    const newPassword = e.target.value;
+                    setFormData({ ...formData, password: newPassword });
+                    if (activeTab === 'signin') {
+                      if (newPassword.length >= 6) {
+                        setErrors((prev) => {
+                          const updated = { ...prev };
+                          delete updated.password;
+                          return updated;
+                        });
+                      }
+                    } else {
+                      const strength = validatePasswordStrength(newPassword);
+                      if (strength.score >= 2) {
+                        setErrors((prev) => {
+                          const updated = { ...prev };
+                          delete updated.password;
+                          return updated;
+                        });
+                      }
+                    }
+                  }}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:outline-none transition ${
+                    errors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-orange-500 focus:border-transparent'
+                  }`}
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              {errors.password && <p className="text-red-500 text-xs mt-1">⚠️ {errors.password}</p>}
+
+              {/* Password Strength Indicator - Solo en signup */}
+              {activeTab === 'signup' && formData.password && (
+                <div className="mt-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-gray-600">Fortaleza:</span>
+                    <span className="text-xs font-semibold">{getPasswordStrengthMessage(passwordStrength)}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                    <div
+                      className={`h-full transition-all ${getPasswordStrengthColor(passwordStrength)}`}
+                      style={{ width: `${((passwordStrength.score + 1) / 5) * 100}%` }}
+                    ></div>
+                  </div>
+                  {passwordStrength.suggestions.length > 0 && (
+                    <ul className="mt-2 text-xs text-gray-600 space-y-1">
+                      {passwordStrength.suggestions.map((suggestion, idx) => (
+                        <li key={idx}>• {suggestion}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
             </div>
 
+            {/* Confirmar Contraseña - Solo en signup */}
             {activeTab === 'signup' && (
               <div className="mb-6">
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                  Confirm Password
+                  Confirmar Contraseña <span className="text-red-500">*</span>
                 </label>
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
-                  required
-                  minLength={6}
-                />
+                <div className="relative">
+                  <input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={formData.confirmPassword}
+                    onChange={(e) => {
+                      const newConfirm = e.target.value;
+                      setFormData({ ...formData, confirmPassword: newConfirm });
+                      if (newConfirm === formData.password && newConfirm.length > 0) {
+                        setErrors((prev) => {
+                          const updated = { ...prev };
+                          delete updated.confirmPassword;
+                          return updated;
+                        });
+                      }
+                    }}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:outline-none transition ${
+                      errors.confirmPassword ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-orange-500 focus:border-transparent'
+                    }`}
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">⚠️ {errors.confirmPassword}</p>}
               </div>
             )}
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || Object.keys(errors).length > 0}
               className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 text-white py-3 rounded-lg font-semibold hover:from-orange-600 hover:to-yellow-600 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Loading...' : activeTab === 'signin' ? 'Sign In' : 'Sign Up'}
+              {loading ? 'Cargando...' : activeTab === 'signin' ? 'Iniciar Sesión' : 'Crear Cuenta'}
             </button>
           </form>
         </div>
