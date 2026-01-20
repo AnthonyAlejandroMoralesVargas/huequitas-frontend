@@ -1,22 +1,31 @@
-import { ArrowLeft, Heart, MessageCircle, Star, X } from 'lucide-react';
+import { ArrowLeft, Edit2, Heart, MessageCircle, Star, Trash2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import DeleteConfirmModal from '../components/DeleteConfirmModal';
+import EditReviewModal from '../components/EditReviewModal';
 import Navbar from '../components/Navbar';
 import ReviewModal from '../components/ReviewModal';
-import { getLikeStatus, getRestaurantById, getReviewsByRestaurant, toggleLike } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import { deleteReview, getLikeStatus, getRestaurantById, getReviewsByRestaurant, toggleLike } from '../services/api';
 import { Restaurant, Review } from '../types';
 
 export default function RestaurantDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [liked, setLiked] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [reviewToDelete, setReviewToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     loadRestaurantData();
@@ -57,6 +66,45 @@ export default function RestaurantDetailPage() {
     } finally {
       setLikeLoading(false);
     }
+  };
+
+  const handleEditReview = (review: Review) => {
+    setSelectedReview(review);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDeleteReview = (reviewId: string) => {
+    setReviewToDelete(reviewId);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!reviewToDelete) return;
+
+    setDeletingReviewId(reviewToDelete);
+    try {
+      await deleteReview(reviewToDelete);
+      setReviews(reviews.filter(r => r._id !== reviewToDelete));
+      loadRestaurantData();
+      setIsDeleteConfirmOpen(false);
+      setReviewToDelete(null);
+    } catch (error) {
+      console.error('Error deleting review:', error);
+      alert('Error al eliminar la reseña');
+    } finally {
+      setDeletingReviewId(null);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setIsDeleteConfirmOpen(false);
+    setReviewToDelete(null);
+  };
+
+  const handleEditSuccess = () => {
+    loadRestaurantData();
+    setIsEditModalOpen(false);
+    setSelectedReview(null);
   };
 
   const handleReviewSuccess = () => {
@@ -220,9 +268,36 @@ export default function RestaurantDetailPage() {
                         })}
                       </p>
                     </div>
-                    <div className="flex items-center gap-1 bg-yellow-100 px-3 py-1.5 rounded-full">
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-bold text-yellow-700">{review.rating}</span>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1 bg-yellow-100 px-3 py-1.5 rounded-full">
+                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                        <span className="font-bold text-yellow-700">{review.rating}</span>
+                      </div>
+                      
+                      {/* Edit/Delete Buttons - Only for owner */}
+                      {user && review.userId === user.id && (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleEditReview(review)}
+                            className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition"
+                            title="Edit review"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteReview(review._id)}
+                            disabled={deletingReviewId === review._id}
+                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
+                            title="Delete review"
+                          >
+                            {deletingReviewId === review._id ? (
+                              <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -275,6 +350,24 @@ export default function RestaurantDetailPage() {
         onClose={() => setIsReviewModalOpen(false)}
         onSuccess={handleReviewSuccess}
         restaurantId={id}
+      />
+
+      {/* Edit Review Modal */}
+      <EditReviewModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSuccess={handleEditSuccess}
+        review={selectedReview}
+      />
+
+      {/* Delete Confirm Modal */}
+      <DeleteConfirmModal
+        isOpen={isDeleteConfirmOpen}
+        title="Eliminar reseña"
+        message="¿Estás seguro de que quieres eliminar esta reseña? Esta acción no se puede deshacer."
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        isLoading={deletingReviewId !== null}
       />
 
       {/* Image Lightbox Modal */}

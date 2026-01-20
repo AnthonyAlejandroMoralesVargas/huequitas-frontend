@@ -135,6 +135,18 @@ export const getReviewsByRestaurant = async (restaurantId: string): Promise<Revi
   return response.data;
 };
 
+export const updateReview = async (reviewId: string, rating: number, comment: string, image?: string) => {
+  // Requiere Auth. Solo el dueño puede editar
+  const response = await api.put(`/api/reviews/${reviewId}`, { rating, comment, image });
+  return response.data;
+};
+
+export const deleteReview = async (reviewId: string) => {
+  // Requiere Auth. Solo el dueño puede eliminar
+  const response = await api.delete(`/api/reviews/${reviewId}`);
+  return response.data;
+};
+
 export const toggleLike = async (restaurantId: string) => {
   // Requiere Auth. Devuelve { message: string, liked: boolean }
   const response = await api.post('/api/like', { restaurantId });
