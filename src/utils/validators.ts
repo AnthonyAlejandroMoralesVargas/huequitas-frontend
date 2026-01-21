@@ -101,7 +101,7 @@ export const validatePasswordStrength = (password: string): PasswordStrength => 
 
 export const validatePasswordsMatch = (password: string, confirmPassword: string): ValidationError | null => {
   if (password !== confirmPassword) {
-    return { field: 'confirmPassword', message: 'Las contraseñas no coinciden' };
+    //return { field: 'confirmPassword', message: 'Las contraseñas no coinciden' };
   }
   return null;
 };
@@ -129,9 +129,9 @@ export const validateRating = (rating: number): ValidationError | null => {
 };
 
 // ========== IMÁGENES ==========
-export const ALLOWED_IMAGE_FORMATS = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-export const ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif'];
-export const MAX_IMAGE_SIZE_MB = 5;
+export const ALLOWED_IMAGE_FORMATS = ['image/jpeg', 'image/jpg'];
+export const ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg'];
+export const MAX_IMAGE_SIZE_MB = 4;
 export const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
 
 export const validateImageFile = (file: File): ValidationError | null => {
@@ -147,7 +147,7 @@ export const validateImageFile = (file: File): ValidationError | null => {
     };
   }
 
-  // Validar tamaño
+  // Validar tamaño original
   if (file.size > MAX_IMAGE_SIZE_BYTES) {
     return {
       field: 'image',

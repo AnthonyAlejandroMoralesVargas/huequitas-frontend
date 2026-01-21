@@ -68,22 +68,24 @@ export const loginUser = async (email: string, password: string): Promise<AuthRe
     }
     return response.data;
   } catch (error: any) {
-    console.error("Login error:", error.response?.data || error.message);
-    throw error;
+    const errorMessage = error.response?.data?.error || error.message || 'Error en el inicio de sesión';
+    console.error("Login error:", errorMessage);
+    throw new Error(errorMessage);
   }
 };
 
-export const registerUser = async (name: string, email: string, password: string): Promise<AuthResponse> => {
+export const registerUser = async (name: string, email: string, password: string, confirmPassword: string): Promise<AuthResponse> => {
   try {
-    const response = await api.post<AuthResponse>('/auth/register', { name, email, password });
+    const response = await api.post<AuthResponse>('/auth/register', { name, email, password, confirmPassword });
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
     }
     return response.data;
   } catch (error: any) {
-    console.error("Register error:", error.response?.data || error.message);
-    throw error;
+    const errorMessage = error.response?.data?.error || error.message || 'Error en el registro';
+    console.error("Register error:", errorMessage);
+    throw new Error(errorMessage);
   }
 };
 

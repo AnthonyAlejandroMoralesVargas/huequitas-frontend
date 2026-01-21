@@ -1,14 +1,14 @@
 import { Eye, EyeOff, UtensilsCrossed } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  getPasswordStrengthColor,
-  getPasswordStrengthMessage,
-  validateEmail,
-  validateName,
-  validatePasswordsMatch,
-  validatePasswordStrength,
+    getPasswordStrengthColor,
+    getPasswordStrengthMessage,
+    validateEmail,
+    validateName,
+    validatePasswordsMatch,
+    validatePasswordStrength,
 } from '../utils/validators';
 
 export default function AuthPage() {
@@ -29,6 +29,14 @@ export default function AuthPage() {
 
   // Obtener fortaleza de contraseña
   const passwordStrength = validatePasswordStrength(formData.password);
+
+  // Limpiar error automáticamente después de 4 segundos
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(''), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -65,9 +73,8 @@ export default function AuthPage() {
     e.preventDefault();
     setError('');
 
-    if (!validateForm()) {
-      return;
-    }
+    // Mostrar errores de validación pero permitir envío
+    validateForm();
 
     setLoading(true);
 
@@ -75,7 +82,7 @@ export default function AuthPage() {
       if (activeTab === 'signin') {
         await login(formData.email, formData.password);
       } else {
-        await signUp(formData.name, formData.email, formData.password);
+        await signUp(formData.name, formData.email, formData.password, formData.confirmPassword);
       }
       navigate('/');
     } catch (err) {
@@ -292,7 +299,7 @@ export default function AuthPage() {
 
             <button
               type="submit"
-              disabled={loading || Object.keys(errors).length > 0}
+              disabled={loading}
               className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 text-white py-3 rounded-lg font-semibold hover:from-orange-600 hover:to-yellow-600 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Cargando...' : activeTab === 'signin' ? 'Iniciar Sesión' : 'Crear Cuenta'}
