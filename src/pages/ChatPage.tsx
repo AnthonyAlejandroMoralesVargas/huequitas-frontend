@@ -15,6 +15,8 @@ export default function ChatPage() {
   const socketRef = useRef<Socket | null>(null);
   const { user } = useAuth();
 
+  const MAX_MESSAGE_LENGTH = 150;
+
   useEffect(() => {
     if (!user) return;
 
@@ -182,23 +184,33 @@ export default function ChatPage() {
             </div>
 
             <div className="border-t border-gray-200 p-4 bg-gray-50">
-              <form onSubmit={handleSendMessage} className="flex gap-3">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type your message..."
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition bg-white"
-                  disabled={sending}
-                />
-                <button
-                  type="submit"
-                  disabled={sending || !newMessage.trim()}
-                  className="px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-lg font-semibold hover:from-orange-600 hover:to-yellow-600 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  <Send className="w-5 h-5" />
-                  Send
-                </button>
+              <form onSubmit={handleSendMessage} className="flex flex-col gap-3">
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value.slice(0, MAX_MESSAGE_LENGTH))}
+                      placeholder="Type your message..."
+                      maxLength={MAX_MESSAGE_LENGTH}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition bg-white"
+                      disabled={sending}
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={sending || !newMessage.trim()}
+                    className="px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-lg font-semibold hover:from-orange-600 hover:to-yellow-600 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    <Send className="w-5 h-5" />
+                    Send
+                  </button>
+                </div>
+                <div className="flex justify-end">
+                  <span className={`text-xs font-medium ${newMessage.length >= MAX_MESSAGE_LENGTH ? 'text-red-500' : 'text-gray-500'}`}>
+                    {newMessage.length}/{MAX_MESSAGE_LENGTH}
+                  </span>
+                </div>
               </form>
             </div>
           </div>

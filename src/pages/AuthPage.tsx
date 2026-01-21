@@ -1,6 +1,7 @@
 import { Eye, EyeOff, UtensilsCrossed } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ForgotPasswordModal from '../components/ForgotPasswordModal';
 import { useAuth } from '../contexts/AuthContext';
 import {
     getPasswordStrengthColor,
@@ -24,6 +25,7 @@ export default function AuthPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { login, signUp } = useAuth();
   const navigate = useNavigate();
 
@@ -297,6 +299,19 @@ export default function AuthPage() {
               </div>
             )}
 
+            {/* Enlace "Olvidé mi contraseña" - Solo en signin */}
+            {activeTab === 'signin' && (
+              <div className="text-right mb-4">
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  className="text-sm text-orange-600 hover:text-orange-700 font-medium transition"
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={loading}
@@ -307,6 +322,12 @@ export default function AuthPage() {
           </form>
         </div>
       </div>
+
+      {/* Modal de recuperación de contraseña */}
+      <ForgotPasswordModal
+        isOpen={showForgotPassword}
+        onClose={() => setShowForgotPassword(false)}
+      />
     </div>
   );
 }

@@ -90,7 +90,13 @@ export const registerUser = async (name: string, email: string, password: string
 };
 
 export const resetPasswordRequest = async (email: string) => {
-  return api.post('/auth/password-reset-request', { email });
+  const response = await api.post('/auth/password-reset-request', { email });
+  return response.data;
+};
+
+export const resetPassword = async (resetToken: string, newPassword: string) => {
+  const response = await api.post('/auth/password-reset', { resetToken, newPassword });
+  return response.data;
 };
 
 export const logout = () => {
