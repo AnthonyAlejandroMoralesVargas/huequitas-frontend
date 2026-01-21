@@ -90,13 +90,36 @@ export const registerUser = async (name: string, email: string, password: string
 };
 
 export const resetPasswordRequest = async (email: string) => {
-  const response = await api.post('/auth/password-reset-request', { email });
-  return response.data;
+  try {
+    const response = await api.post('/auth/password-reset-request', { email });
+    return response.data;
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.error || error.message || 'Error al solicitar reseteo';
+    console.error('Reset password request error:', errorMessage);
+    throw new Error(errorMessage);
+  }
 };
 
-export const resetPassword = async (resetToken: string, newPassword: string) => {
-  const response = await api.post('/auth/password-reset', { resetToken, newPassword });
-  return response.data;
+export const verifyResetCode = async (email: string, resetCode: string) => {
+  try {
+    const response = await api.post('/auth/verify-reset-code', { email, resetCode });
+    return response.data;
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.error || error.message || 'Código inválido o expirado';
+    console.error('Verify reset code error:', errorMessage);
+    throw new Error(errorMessage);
+  }
+};
+
+export const resetPassword = async (email: string, resetCode: string, newPassword: string, confirmPassword: string) => {
+  try {
+    const response = await api.post('/auth/password-reset', { email, resetCode, newPassword, confirmPassword });
+    return response.data;
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.error || error.message || 'Error al resetear contraseña';
+    console.error('Reset password error:', errorMessage);
+    throw new Error(errorMessage);
+  }
 };
 
 export const logout = () => {

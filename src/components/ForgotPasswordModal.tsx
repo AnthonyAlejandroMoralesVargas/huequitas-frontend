@@ -1,6 +1,6 @@
 import { Eye, EyeOff, X } from 'lucide-react';
 import { useState } from 'react';
-import { resetPassword, resetPasswordRequest } from '../services/api';
+import { resetPassword, resetPasswordRequest, verifyResetCode } from '../services/api';
 import { validateEmail, validatePasswordStrength } from '../utils/validators';
 
 interface ForgotPasswordModalProps {
@@ -9,9 +9,9 @@ interface ForgotPasswordModalProps {
 }
 
 export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProps) {
-  const [step, setStep] = useState<'email' | 'reset'>('email');
+  const [step, setStep] = useState<'email' | 'code' | 'password'>('email');
   const [email, setEmail] = useState('');
-  const [resetToken, setResetToken] = useState('');
+  const [resetCode, setResetCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -36,10 +36,12 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
 
     setLoading(true);
     try {
-      const response = await resetPasswordRequest(email);
-      setResetToken(response.resetToken);
-      setStep('reset');
-      setSuccess('Token enviado. Ingresa tu nueva contraseña.');
+      await resetPasswordRequest(email);
+      setSuccess('✅ Código enviado a tu correo. Válido por 15 minutos.');
+      setTimeout(() => {
+        setStep('code');
+        setSuccess('');
+      }, 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al solicitar reset');
     } finally {
@@ -47,33 +49,66 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
     }
   };
 
-  const handleResetPassword = async (e: React.FormEvent) => {
+  const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    // Validar contraseña
-    const passwordError = validatePasswordStrength(newPassword);
-    if (passwordError) {
-      setError(passwordError.message);
-      return;
-    }
-
-    // Validar que coincidan
-    if (newPassword !== confirmPassword) {
-      setError('Las contraseñas no coinciden');
+    // Validar código
+    if (!resetCode || resetCode.length !== 6) {
+      setError('El código debe tener 6 dígitos');
       return;
     }
 
     setLoading(true);
     try {
-      await resetPassword(resetToken, newPassword);
-      setSuccess('Contraseña resetada exitosamente. Redirigiendo...');
+      await verifyResetCode(email, resetCode);
+      setSuccess('✅ Código verificado correctamente. Ahora ingresa tu nueva contraseña.');
+      setTimeout(() => {
+        setStep('password');
+        setSuccess('');
+      }, 1500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Código inválido o expirado');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    console.log('🚀 handleResetPassword ejecutado');
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    console.log('📋 Datos:', { email, resetCode, newPassword, confirmPassword });
+
+    // Validar contraseña
+    const passwordStrengthCheck = validatePasswordStrength(newPassword);
+    if (passwordStrengthCheck.suggestions.length > 0) {
+      console.warn('⚠️ Validación de contraseña falló:', passwordStrengthCheck.suggestions);
+      setError('La contraseña no cumple con los requisitos mínimos de seguridad');
+      return;
+    }
+
+    // Validar que coincidan
+    if (newPassword !== confirmPassword) {
+      console.warn('⚠️ Las contraseñas no coinciden');
+      setError('Las contraseñas no coinciden');
+      return;
+    }
+
+    setLoading(true);
+    console.log('📤 Enviando petición POST a /auth/password-reset', { email, resetCode, newPassword, confirmPassword });
+    try {
+      const response = await resetPassword(email, resetCode, newPassword, confirmPassword);
+      console.log('✅ Respuesta del servidor:', response);
       setTimeout(() => {
         onClose();
         window.location.href = '/auth';
-      }, 2000);
+      }, 1000);
     } catch (err) {
+      console.error('❌ Error en resetPassword:', err);
       setError(err instanceof Error ? err.message : 'Error al resetear contraseña');
     } finally {
       setLoading(false);
@@ -83,7 +118,7 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
   const handleClose = () => {
     setStep('email');
     setEmail('');
-    setResetToken('');
+    setResetCode('');
     setNewPassword('');
     setConfirmPassword('');
     setError('');
@@ -105,7 +140,9 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-800">
-            {step === 'email' ? 'Recuperar Contraseña' : 'Nueva Contraseña'}
+            {step === 'email' && 'Recuperar Contraseña'}
+            {step === 'code' && 'Verificar Código'}
+            {step === 'password' && 'Nueva Contraseña'}
           </h2>
           <button
             onClick={handleClose}
@@ -115,7 +152,14 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
           </button>
         </div>
 
-        <form onSubmit={step === 'email' ? handleRequestReset : handleResetPassword} className="p-6 space-y-4">
+        <form 
+          onSubmit={
+            step === 'email' ? handleRequestReset : 
+            step === 'code' ? handleVerifyCode : 
+            handleResetPassword
+          } 
+          className="p-6 space-y-4"
+        >
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
               ❌ {error}
@@ -124,14 +168,15 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
 
           {success && (
             <div className="p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">
-              ✅ {success}
+              {success}
             </div>
           )}
 
-          {step === 'email' ? (
+          {/* PASO 1: EMAIL */}
+          {step === 'email' && (
             <>
               <p className="text-sm text-gray-600 mb-4">
-                Ingresa tu email para recibir las instrucciones de recuperación
+                Ingresa tu email para recibir un código de verificación
               </p>
               <div>
                 <label htmlFor="reset-email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -148,7 +193,36 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
                 />
               </div>
             </>
-          ) : (
+          )}
+
+          {/* PASO 2: CÓDIGO */}
+          {step === 'code' && (
+            <>
+              <p className="text-sm text-gray-600 mb-4">
+                Hemos enviado un código de 6 dígitos a<br/>
+                <strong>{email}</strong>
+              </p>
+              <div>
+                <label htmlFor="reset-code" className="block text-sm font-medium text-gray-700 mb-2">
+                  Código de Verificación <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="reset-code"
+                  type="text"
+                  value={resetCode}
+                  onChange={(e) => setResetCode(e.target.value.slice(0, 6))}
+                  placeholder="000000"
+                  maxLength={6}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition text-center text-2xl tracking-widest font-bold"
+                  disabled={loading}
+                />
+                <p className="text-xs text-gray-500 mt-2">Ingresa los 6 dígitos que recibiste</p>
+              </div>
+            </>
+          )}
+
+          {/* PASO 3: CONTRASEÑA */}
+          {step === 'password' && (
             <>
               <p className="text-sm text-gray-600 mb-4">
                 Ingresa tu nueva contraseña
@@ -253,7 +327,10 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
               disabled={loading}
               className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-lg font-semibold hover:from-orange-600 hover:to-yellow-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Procesando...' : step === 'email' ? 'Solicitar Reset' : 'Resetear Contraseña'}
+              {loading ? 'Procesando...' : 
+                step === 'email' ? 'Enviar Código' : 
+                step === 'code' ? 'Verificar Código' : 
+                'Resetear Contraseña'}
             </button>
           </div>
         </form>

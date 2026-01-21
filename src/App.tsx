@@ -4,6 +4,7 @@ import AuthPage from './pages/AuthPage';
 import ChatPage from './pages/ChatPage';
 import HomePage from './pages/HomePage';
 import RankingPage from './pages/RankingPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import RestaurantDetailPage from './pages/RestaurantDetailPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -44,6 +45,14 @@ function App() {
             element={
               <PublicRoute>
                 <AuthPage />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/reset-password"
+            element={
+              <PublicRoute>
+                <ResetPasswordPage />
               </PublicRoute>
             }
           />
