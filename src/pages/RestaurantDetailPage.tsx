@@ -372,7 +372,7 @@ export default function RestaurantDetailPage() {
                   </div>
 
                   {/* Review Comment */}
-                  <p className="text-gray-700 leading-relaxed mb-4">{review.comment || 'Sin comentarios'}</p>
+                  <p className="text-gray-700 leading-relaxed mb-4 break-words whitespace-pre-wrap overflow-hidden">{review.comment || 'Sin comentarios'}</p>
 
                   {/* Review Image - Enhanced Design */}
                   {review.image && (
