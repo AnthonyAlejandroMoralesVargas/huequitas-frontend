@@ -22,16 +22,31 @@ api.interceptors.request.use((config) => {
 });
 
 // --- TIPOS (Interfaces basadas en tu Mongoose Models) ---
+export interface UserPreferences {
+  foodTypes: string[];
+  location: string | null;
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
+  preferences?: UserPreferences;
+  isProfileComplete?: boolean;
 }
 
 export interface AuthResponse {
   message: string;
   token: string;
   user: User;
+}
+
+export interface RestaurantLocation {
+  sector: 'Norte' | 'Centro' | 'Sur' | 'Valles';
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
 }
 
 export interface Restaurant {
@@ -42,7 +57,13 @@ export interface Restaurant {
   cuisine: string;
   rating?: number;
   totalRatings?: number;
-  image?: string; // Si decides agregar imágenes luego
+  image?: string;
+  location?: RestaurantLocation;
+}
+
+export interface RestaurantFilters {
+  cuisines?: string[];
+  location?: string;
 }
 
 export interface Review {
@@ -128,11 +149,67 @@ export const logout = () => {
   window.location.href = '/login';
 };
 
+// --- SERVICIOS DE PERFIL ---
+
+export const getProfile = async (): Promise<User> => {
+  try {
+    const response = await api.get<User>('/auth/profile');
+    return response.data;
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.error || error.message || 'Error al obtener perfil';
+    console.error('Get profile error:', errorMessage);
+    throw new Error(errorMessage);
+  }
+};
+
+export const updateProfile = async (data: { name?: string; preferences?: Partial<UserPreferences> }): Promise<AuthResponse> => {
+  try {
+    const response = await api.put<AuthResponse>('/auth/profile', data);
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
+    return response.data;
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.error || error.message || 'Error al actualizar perfil';
+    console.error('Update profile error:', errorMessage);
+    throw new Error(errorMessage);
+  }
+};
+
+export const completeSetup = async (foodTypes: string[], location: string): Promise<AuthResponse> => {
+  try {
+    const response = await api.post<AuthResponse>('/auth/profile/complete-setup', { foodTypes, location });
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
+    return response.data;
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.error || error.message || 'Error al completar configuración';
+    console.error('Complete setup error:', errorMessage);
+    throw new Error(errorMessage);
+  }
+};
+
 // --- SERVICIOS CORE (Huecas & Reseñas) ---
 // Rutas: /api/restaurants, /api/reviews
 
-export const getRestaurants = async (): Promise<Restaurant[]> => {
-  const response = await api.get<Restaurant[]>('/api/restaurants');
+export const getRestaurants = async (filters?: RestaurantFilters): Promise<Restaurant[]> => {
+  const params = new URLSearchParams();
+
+  if (filters?.cuisines && filters.cuisines.length > 0) {
+    params.append('cuisines', filters.cuisines.join(','));
+  }
+
+  if (filters?.location) {
+    params.append('location', filters.location);
+  }
+
+  const queryString = params.toString();
+  const url = queryString ? `/api/restaurants?${queryString}` : '/api/restaurants';
+
+  const response = await api.get<Restaurant[]>(url);
   return response.data;
 };
 

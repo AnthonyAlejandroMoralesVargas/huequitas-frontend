@@ -3,12 +3,14 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AuthPage from './pages/AuthPage';
 import ChatPage from './pages/ChatPage';
 import HomePage from './pages/HomePage';
+import OnboardingPage from './pages/OnboardingPage';
+import ProfilePage from './pages/ProfilePage';
 import RankingPage from './pages/RankingPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import RestaurantDetailPage from './pages/RestaurantDetailPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { token, isLoading } = useAuth();
+  const { token, isLoading, needsOnboarding } = useAuth();
 
   if (isLoading) {
     return (
@@ -18,11 +20,41 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return token ? <>{children}</> : <Navigate to="/auth" />;
+  if (!token) {
+    return <Navigate to="/auth" />;
+  }
+
+  if (needsOnboarding) {
+    return <Navigate to="/onboarding" />;
+  }
+
+  return <>{children}</>;
+}
+
+function OnboardingRoute({ children }: { children: React.ReactNode }) {
+  const { token, isLoading, needsOnboarding } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-orange-100 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-orange-500 border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (!token) {
+    return <Navigate to="/auth" />;
+  }
+
+  if (!needsOnboarding) {
+    return <Navigate to="/" />;
+  }
+
+  return <>{children}</>;
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { token, isLoading } = useAuth();
+  const { token, isLoading, needsOnboarding } = useAuth();
 
   if (isLoading) {
     return (
@@ -32,7 +64,14 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return token ? <Navigate to="/" /> : <>{children}</>;
+  if (token) {
+    if (needsOnboarding) {
+      return <Navigate to="/onboarding" />;
+    }
+    return <Navigate to="/" />;
+  }
+
+  return <>{children}</>;
 }
 
 function App() {
@@ -57,10 +96,26 @@ function App() {
             }
           />
           <Route
+            path="/onboarding"
+            element={
+              <OnboardingRoute>
+                <OnboardingPage />
+              </OnboardingRoute>
+            }
+          />
+          <Route
             path="/"
             element={
               <ProtectedRoute>
                 <HomePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
               </ProtectedRoute>
             }
           />

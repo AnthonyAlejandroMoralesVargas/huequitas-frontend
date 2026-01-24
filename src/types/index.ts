@@ -1,7 +1,22 @@
+export interface UserPreferences {
+  foodTypes: string[];
+  location: string | null;
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
+  preferences?: UserPreferences;
+  isProfileComplete?: boolean;
+}
+
+export interface RestaurantLocation {
+  sector: 'Norte' | 'Centro' | 'Sur' | 'Valles';
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
 }
 
 export interface Restaurant {
@@ -11,6 +26,7 @@ export interface Restaurant {
   address?: string;
   cuisine: string;
   image?: string;
+  location?: RestaurantLocation;
   rating?: number;
   totalRatings?: number;
   createdAt?: string;

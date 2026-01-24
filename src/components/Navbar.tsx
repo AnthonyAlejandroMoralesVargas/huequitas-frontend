@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { UtensilsCrossed, Home, Trophy, MessageCircle, LogOut } from 'lucide-react';
+import { UtensilsCrossed, Home, Trophy, MessageCircle, LogOut, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Navbar() {
@@ -57,7 +57,18 @@ export default function Navbar() {
             </Link>
 
             <div className="flex items-center gap-3 pl-6 border-l border-gray-200">
-              <span className="text-gray-700 font-medium hidden md:inline">{user?.name}</span>
+              <Link
+                to="/profile"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                  isActive('/profile')
+                    ? 'bg-orange-100 text-orange-600 font-semibold'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+                title="Mi Perfil"
+              >
+                <User className="w-5 h-5" />
+                <span className="hidden md:inline">{user?.name}</span>
+              </Link>
               <button
                 onClick={logout}
                 className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"

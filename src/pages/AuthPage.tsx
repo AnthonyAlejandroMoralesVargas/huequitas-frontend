@@ -82,11 +82,18 @@ export default function AuthPage() {
 
     try {
       if (activeTab === 'signin') {
-        await login(formData.email, formData.password);
+        const user = await login(formData.email, formData.password);
+        // Redirigir según el estado del perfil
+        if (user.isProfileComplete) {
+          navigate('/');
+        } else {
+          navigate('/onboarding');
+        }
       } else {
+        // Nuevo registro siempre va a onboarding
         await signUp(formData.name, formData.email, formData.password, formData.confirmPassword);
+        navigate('/onboarding');
       }
-      navigate('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Authentication failed');
     } finally {
